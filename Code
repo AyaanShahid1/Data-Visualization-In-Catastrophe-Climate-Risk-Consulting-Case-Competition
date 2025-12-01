@@ -1,0 +1,399 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import expon, poisson, binom, gamma, lognorm, kstest
+import scipy.stats as stats
+
+
+data = pd.read_csv("Dataset.csv")
+
+
+Additional_living_expense = data.loc[(data["coverage"] == "Additional Living Expense") & data["amount"] > 0]
+living_expense_data = Additional_living_expense["amount"]
+#print(living_expense_data)
+
+list = living_expense_data.tolist()
+x = [n for n in range(1,len(list)+1)]
+    
+print(len(list))
+
+plt.hist(list, bins = 30, density = True, color='lightseagreen')
+plt.title("Histogram Of Additional Living Expense Claim Amounts")
+plt.axis(True)
+plt.xlabel("Claim Amounts")
+plt.ylabel("Density")
+plt.savefig("Histogram Of Additional Living Expense Claim Amounts.png")
+plt.show()
+
+values = living_expense_data.values
+params_exp = expon.fit(values)
+params_gamma = gamma.fit(values)
+params_logn = lognorm.fit(values)
+print("")
+print("Exponential" ,kstest(values, "expon", params_exp))
+print("")
+print("gamma : ",kstest(values, "gamma", params_gamma))
+print("")
+print("lognorm : ",kstest(values, "lognorm", params_logn))
+print("")
+
+def AIC(dist, params):
+    loglik = np.sum(dist.logpdf(values, *params))
+    k = len(params)
+    return 2*k - 2*loglik
+
+aic_exp = AIC(expon, params_exp)
+aic_gamma = AIC(gamma, params_gamma)
+aic_logn = AIC(lognorm, params_logn)
+
+print("Exponential AIC :", aic_exp, "Gamma AIC :", aic_gamma, "Lognormal AIC :", aic_logn)
+
+stats.probplot(values, dist=lognorm(params_logn[0], params_logn[1], params_logn[2]), plot=plt)
+plt.title("Lognormal QQ Plot")
+plt.savefig("Lognormal QQ Plot.png")
+plt.show()
+
+shape, loc, scale = lognorm.fit(values)
+
+x = np.linspace(min(values), max(values), 500)
+pdf = lognorm.pdf(x, shape, loc, scale)
+
+plt.hist(values, bins=30, density=True, alpha=0.6, color='lightseagreen')
+plt.plot(x, pdf, linewidth=2, color='darkorange')
+plt.title("Lognormal Fit to Claim Amounts")
+plt.xlabel("Claim Amounts")
+plt.ylabel("Density")
+plt.savefig("Lognormal Fit to Claim Amounts.png")
+plt.show()
+
+print("Lognormal parameters: shape =", shape, ", loc =", loc, ", scale =", scale)
+
+simulated_claims = lognorm.rvs(shape, loc, scale, size=10000)
+plt.hist(simulated_claims, bins=50, color='lightseagreen', density=True)
+plt.title("Simulated Claim Amounts")
+plt.xlabel("Claim Amounts")
+plt.ylabel("Density")
+plt.savefig("Simulated Claim Amounts.png")
+plt.show()
+
+
+############ business major claim amounts lognormal fit and simulation ############
+
+business_living_expense = data.loc[(data["study"] == "Business") & (data["coverage"] == "Additional Living Expense") & (data["amount"] > 0)]
+business_living_expense_data = business_living_expense["amount"]
+
+list = business_living_expense_data.tolist()
+x = [n for n in range(1,len(list)+1)]
+    
+print(len(list))
+
+plt.hist(list, bins = 30, density = True, color='lightseagreen')
+plt.title("Histogram Of Additional Living Expense Claim Amounts from Business Majors")
+plt.axis(True)
+plt.xlabel("Claim Amounts")
+plt.ylabel("Density")
+plt.savefig("Histogram Of Additional Living Expense Claim Amounts from Business Majors.png")
+plt.show()
+
+shape1, loc1, scale1 = lognorm.fit(business_living_expense_data.values)
+
+x = np.linspace(min(business_living_expense_data.values), max(business_living_expense_data.values), 500)
+pdf = lognorm.pdf(x, shape1, loc1, scale1)
+    
+plt.hist(business_living_expense_data.values, bins=30, density=True, alpha=0.6, color='lightseagreen')
+plt.plot(x, pdf, linewidth=2, color='darkorange')
+plt.title("Lognormal Fit to Claim Amounts from Business Majors")
+plt.xlabel("Claim Amounts")
+plt.ylabel("Density")
+plt.savefig("Lognormal Fit to Claim Amounts from Business Majors.png")
+plt.show()
+
+
+############ Humanities major claim amounts lognormal fit and simulation ############
+
+humanities_living_expense = data.loc[(data["study"] == "Humanities") & (data["coverage"] == "Additional Living Expense") & (data["amount"] > 0)]
+humanities_living_expense_data = humanities_living_expense["amount"]
+
+list = humanities_living_expense_data.tolist()
+x = [n for n in range(1,len(list)+1)]
+    
+print(len(list))
+
+plt.hist(list, bins = 30, density = True, color='lightseagreen')
+plt.title("Histogram Of Additional Living Expense Claim Amounts from Business Majors")
+plt.axis(True)
+plt.xlabel("Claim Amounts")
+plt.ylabel("Density")
+plt.savefig("Histogram Of Additional Living Expense Claim Amounts from Business Majors.png")
+plt.show()
+
+shape2, loc2, scale2 = lognorm.fit(humanities_living_expense_data.values)
+
+x = np.linspace(min(humanities_living_expense_data.values), max(humanities_living_expense_data.values), 500)
+pdf = lognorm.pdf(x, shape2, loc2, scale2)
+    
+plt.hist(humanities_living_expense_data.values, bins=30, density=True, alpha=0.6, color='lightseagreen')
+plt.plot(x, pdf, linewidth=2, color='darkorange')
+plt.title("Lognormal Fit to Claim Amounts from Humanities Majors")
+plt.xlabel("Claim Amounts")
+plt.ylabel("Density")
+plt.savefig("Lognormal Fit to Claim Amounts from Humanities Majors.png")
+plt.show()
+
+
+mean = simulated_claims.mean()
+VaR95 = np.percentile(simulated_claims, 95)
+TVaR95 = simulated_claims[simulated_claims > VaR95].mean()
+
+print("")
+print("Mean of Simulated Claims:", mean)
+print("95th Percentile (VaR95):", VaR95)
+print("Tail Value at Risk (TVaR95):", TVaR95)
+print("")
+
+claims = data.loc[(data["study"] == "Business") & (data["coverage"] == "Additional Living Expense") & (data["amount"] > 0)]
+print(len(claims))
+business_majors = data.loc[(data["study"] == "Business") & (data["coverage"] == "Additional Living Expense")]
+print(len(business_majors))
+
+prob = len(claims) / len(business_majors)
+print("y (average number of claims per year for business majors):", prob)
+
+lambda_total = 136
+
+k = np.arange(100, 171)
+
+prob_dist = poisson.pmf(k, lambda_total)
+
+plt.bar(k, prob_dist, color='skyblue')
+plt.xlabel("Total Number of Claims in a Year")
+plt.ylabel("Probability")
+plt.title("Risk Distribution of Total Claims from Business Majors (Poisson)")
+plt.savefig("Risk Distribution of Total Claims (Poisson).png")
+plt.show()
+
+
+n_simulations = 10000
+
+annual_losses = []
+
+for _ in range(n_simulations):
+    
+    n_claims = poisson.rvs(lambda_total)
+    
+    if n_claims == 0:
+        annual_losses.append(0.0)
+    else:
+        
+        sizes = lognorm.rvs(shape1, loc1, scale1, size=n_claims)
+        annual_losses.append(sizes.sum())
+
+annual_losses = np.array(annual_losses)
+print(annual_losses)
+business_mean = np.mean(annual_losses)
+
+plt.hist(annual_losses, bins=100, color='lightseagreen', density=True)
+plt.title("Monte Carlo Simulation of Annual Total Losses from Business Majors")
+plt.xlabel("Total Losses")
+plt.ylabel("Density")
+plt.ticklabel_format(style = "plain", axis = 'x')
+plt.axvline(business_mean, color='black', linewidth=0.5)
+plt.savefig("Monte Carlo Simulation of Annual Total Losses from Business Majors.png")
+plt.show()
+
+all_data = data.loc[(data["coverage"] == "Additional Living Expense") & (data["amount"] > 0) & (data["study"] == "Humanities")]
+
+q = len(all_data)
+print(q)
+q_ = len(data.loc[(data["coverage"] == "Additional Living Expense") & (data["study"] == "Humanities")])
+print(q_)
+
+k = np.arange(90, 165)
+
+prob_dist = poisson.pmf(k, q)
+
+plt.bar(k, prob_dist, color='skyblue')
+plt.xlabel("Total Number of Claims in a Year")
+plt.ylabel("Probability")
+plt.title("Risk Distribution of Total Claims from Humanities Majors (Poisson)")
+plt.savefig("Risk Distribution of Total Claims from Humanities Majors (Poisson).png")
+plt.show()
+
+annual_losses_humanities = []
+
+for _ in range(n_simulations):
+    
+    n_claims = poisson.rvs(q)
+    
+    if n_claims == 0:
+        annual_losses_humanities.append(0.0)
+    else:
+        
+        sizes = lognorm.rvs(shape2, loc2, scale2, size=n_claims)
+        annual_losses_humanities.append(sizes.sum())
+
+humanities_mean = np.mean(annual_losses_humanities)
+annual_losses_humanities = np.array(annual_losses_humanities)
+print(annual_losses_humanities)
+print("humanities_mean:", humanities_mean)
+print("business_mean:", business_mean)
+
+plt.hist(annual_losses_humanities, bins=100, color='lightseagreen', density=True)
+plt.title("Monte Carlo Simulation of Annual Total Losses from Humanities Majors")
+plt.xlabel("Total Losses")
+plt.ylabel("Density")
+plt.ticklabel_format(style = "plain", axis = 'x')
+plt.axvline(humanities_mean, color='black', linewidth=0.5)
+plt.savefig("Monte Carlo Simulation of Annual Total Losses from Humanities Majors.png")
+plt.show()
+
+# --- 1) Simulation-based standard deviations ---
+sd_sim_business = np.std(annual_losses, ddof=1)   # sample SD from Monte Carlo
+print("Simulated SD of annual losses (business):", sd_sim_business)
+
+sd_sim_humanities = np.std(annual_losses_humanities, ddof=1)
+print("Simulated SD of annual losses (humanities):", sd_sim_humanities)
+
+
+
+################# CATASTROPHE EVENTS #################
+
+
+cat_lambda = 110/174              
+cat_claims_mean_business = 5      
+cat_claims_mean_humanities = 5    
+cat_severity_multiplier = 5.0     
+
+
+
+
+n_simulations = 10000  
+
+annual_losses_with_cat_business = []
+total_claims_counts_business = []
+
+annual_losses_with_cat_humanities = []
+total_claims_counts_humanities = []
+
+for _ in range(n_simulations):
+    # BUSINESS
+    base_claims_b = poisson.rvs(lambda_total)                 
+    cats_b = poisson.rvs(cat_lambda)                          
+    extra_claims_b = poisson.rvs(cat_claims_mean_business * cats_b) if cats_b > 0 else 0
+    total_claims_b = base_claims_b + extra_claims_b
+    total_claims_counts_business.append(total_claims_b)
+
+    if total_claims_b == 0:
+        annual_losses_with_cat_business.append(0.0)
+    else:
+        # sample baseline claim sizes
+        sizes_base = np.zeros(0)
+        if base_claims_b > 0:
+            sizes_base = lognorm.rvs(shape1, loc1, scale1, size=base_claims_b)
+        # sample catastrophic claim sizes 
+        sizes_cat = np.zeros(0)
+        if extra_claims_b > 0:
+            
+            sizes_cat = lognorm.rvs(shape1, 0, scale1 * cat_severity_multiplier, size=extra_claims_b)
+        annual_losses_with_cat_business.append(sizes_base.sum() + sizes_cat.sum())
+
+    # HUMANITIES
+    base_claims_h = poisson.rvs(q)                            
+    cats_h = poisson.rvs(cat_lambda)
+    extra_claims_h = poisson.rvs(cat_claims_mean_humanities * cats_h) if cats_h > 0 else 0
+    total_claims_h = base_claims_h + extra_claims_h
+    total_claims_counts_humanities.append(total_claims_h)
+
+    if total_claims_h == 0:
+        annual_losses_with_cat_humanities.append(0.0)
+    else:
+        sizes_base_h = np.zeros(0)
+        if base_claims_h > 0:
+            sizes_base_h = lognorm.rvs(shape2, loc2, scale2, size=base_claims_h)
+        sizes_cat_h = np.zeros(0)
+        if extra_claims_h > 0:
+            sizes_cat_h = lognorm.rvs(shape2, 0, scale2 * cat_severity_multiplier, size=extra_claims_h)
+        annual_losses_with_cat_humanities.append(sizes_base_h.sum() + sizes_cat_h.sum())
+
+annual_losses_with_cat_business = np.array(annual_losses_with_cat_business)
+annual_losses_with_cat_humanities = np.array(annual_losses_with_cat_humanities)
+total_claims_counts_business = np.array(total_claims_counts_business)
+total_claims_counts_humanities = np.array(total_claims_counts_humanities)
+
+
+print("Business - mean loss (no catastrophes):", business_mean)
+print("Business - mean loss (with catastrophes):", annual_losses_with_cat_business.mean())
+print("Business - sd loss (no catastrophes):", sd_sim_business)
+print("Business - sd loss (with catastrophes):", np.std(annual_losses_with_cat_business, ddof=1))
+
+print("Humanities - mean loss (no catastrophes):", humanities_mean)
+print("Humanities - mean loss (with catastrophes):", annual_losses_with_cat_humanities.mean())
+print("Humanities - sd loss (no catastrophes):", sd_sim_humanities)
+print("Humanities - sd loss (with catastrophes):", np.std(annual_losses_with_cat_humanities, ddof=1))
+
+# Histograms of annual losses - baseline vs with catastrophes
+plt.figure(figsize=(15, 8))
+plt.hist(annual_losses, bins=100, density=True, alpha=0.4, label='Business - baseline', color='lightseagreen')
+plt.axvline(business_mean, color='darkgreen', linestyle='dashed', linewidth=1)
+plt.hist(annual_losses_with_cat_business, bins=100, density=True, alpha=0.4, label='Business - with catastrophes', color='salmon')
+plt.axvline(annual_losses_with_cat_business.mean(), color='darkred', linestyle='dashed', linewidth=1)
+plt.title("Annual Total Losses - Business: baseline vs with catastrophes")
+plt.xlabel("Total Losses")
+plt.ylabel("Density")
+plt.legend()
+plt.ticklabel_format(style="plain", axis='x')
+plt.savefig("Annual Losses Business - baseline vs catastrophes.png")
+plt.show()
+
+plt.figure(figsize=(15, 8))
+plt.hist(annual_losses_humanities, bins=100, density=True, alpha=0.4, label='Humanities - baseline', color='lightseagreen')
+plt.axvline(humanities_mean, color='darkgreen', linestyle='dashed', linewidth=1)
+plt.hist(annual_losses_with_cat_humanities, bins=100, density=True, alpha=0.4, label='Humanities - with catastrophes', color='salmon')
+plt.axvline(annual_losses_with_cat_humanities.mean(), color='darkred', linestyle='dashed', linewidth=1)
+plt.title("Annual Total Losses - Humanities: baseline vs with catastrophes")
+plt.xlabel("Total Losses")
+plt.ylabel("Density")
+plt.legend()
+plt.ticklabel_format(style="plain", axis='x')
+plt.savefig("Annual Losses Humanities - baseline vs catastrophes.png")
+plt.show()
+
+# Empirical risk distribution 
+max_k_b = int(np.percentile(total_claims_counts_business, 99.9)) + 10
+k_b = np.arange(100, 180)
+pmf_b = np.array([(total_claims_counts_business == ki).mean() for ki in k_b])
+
+plt.bar(k_b, pmf_b, color='skyblue')
+plt.xlabel("Total Number of Claims in a Year")
+plt.ylabel("Empirical Probability")
+plt.title("Empirical Risk Distribution of Total Claims - Business (with catastrophes)")
+plt.savefig("Risk Distribution Total Claims Business with catastrophes.png")
+plt.show()
+
+max_k_h = int(np.percentile(total_claims_counts_humanities, 99.9)) + 10
+k_h = np.arange(90, 170)
+pmf_h = np.array([(total_claims_counts_humanities == ki).mean() for ki in k_h])
+
+plt.bar(k_h, pmf_h, color='skyblue')
+plt.xlabel("Total Number of Claims in a Year")
+plt.ylabel("Empirical Probability")
+plt.title("Empirical Risk Distribution of Total Claims - Humanities (with catastrophes)")
+plt.savefig("Risk Distribution Total Claims Humanities with catastrophes.png")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
